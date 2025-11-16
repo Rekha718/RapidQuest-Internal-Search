@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -23,9 +24,14 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-4(s@*o%3c6)3mw9sn3=7!^*7y+b2h(x4lhosc0$ljjj$=dxzg^'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False  # Set to False in production
 
-ALLOWED_HOSTS = []
+# Add your Render backend and localhost for development
+ALLOWED_HOSTS = [
+    'rapidquest-backend-hgcc.onrender.com',
+    'localhost',
+    '127.0.0.1',
+]
 
 
 # Application definition
@@ -124,18 +130,25 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
+# Media files settings
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-CORS_ALLOW_ALL_ORIGINS = True
 
-#media files settings
-import os
-MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+# CORS settings
+CORS_ALLOW_ALL_ORIGINS = False  # safer for production
+CORS_ALLOWED_ORIGINS = [
+    "https://rapid-quest-internal-search-frontend.vercel.app",
+]
 
+
+# DRF settings
 REST_FRAMEWORK = {
     'DEFAULT_PARSER_CLASSES': [
         'rest_framework.parsers.JSONParser',
