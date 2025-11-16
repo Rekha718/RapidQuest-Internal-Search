@@ -15,15 +15,30 @@ from nltk.corpus import stopwords
 import string
 import re
 
+# Appwrite imports
+from appwrite.client import Client
+from appwrite.services.storage import Storage
+
 # Download stopwords once
 nltk.download('stopwords', quiet=True)
 STOPWORDS = set(stopwords.words('english'))
 
+# Appwrite config
+APPWRITE_ENDPOINT = "https://fra.cloud.appwrite.io/v1"
+APPWRITE_PROJECT_ID = "69199dd4001999027b50"
+APPWRITE_BUCKET_ID = "69199e4b0022548436b1"
+APPWRITE_API_KEY = "standard_e91ce24b8e67320ec080559ac6bd995c9b92ea78b9bd22b6213c8d8999daebf619667cee271fd4177fa6a2f1a53d1f08922ef178eb55a0ec76511cbf442a8f2c7e50902e7eadf372ae8f3d41000fa3002c015cf8377f0559a9504e2c541d5bd200af0db02d9e9ae9b49ff4c281fb7caf29e5df756829f14cee88e7a2cb6d6928"
+
+client = Client()
+client.set_endpoint(APPWRITE_ENDPOINT)
+client.set_project(APPWRITE_PROJECT_ID)
+client.set_key(APPWRITE_API_KEY)
+storage = Storage(client)
+
 
 # --------------------------
-#   TEXT NORMALIZATION
+# TEXT NORMALIZATION
 # --------------------------
-
 def normalize_text(text):
     text = text.replace("\n", " ")
     text = " ".join(text.split())
@@ -31,25 +46,16 @@ def normalize_text(text):
     return text
 
 
-# --------------------------
-#   FILENAME NORMALIZATION
-# --------------------------
-
 def normalize_filename(name):
-    """
-    Converts 'TimeTable (1).pdf' → 'time table (1).pdf'
-    Allows search: 'time table', 'timetable', 'table', etc.
-    """
-    name = re.sub(r"(?<=[a-z])(?=[A-Z])", " ", name)  # split camelCase or PascalCase
+    name = re.sub(r"(?<=[a-z])(?=[A-Z])", " ", name)
     name = name.replace("_", " ")
     name = " ".join(name.split())
     return name.lower()
 
 
 # --------------------------
-#   TEXT EXTRACTION HELPERS
+# TEXT EXTRACTION
 # --------------------------
-
 def extract_text_from_pdf(file):
     try:
         reader = PyPDF2.PdfReader(file)
@@ -78,23 +84,16 @@ def generate_keywords(text):
     text = text.translate(str.maketrans("", "", string.punctuation))
     words = text.split()
     filtered = [w for w in words if w not in STOPWORDS and len(w) > 3]
-
     freq = {}
     for w in filtered:
         freq[w] = freq.get(w, 0) + 1
-
     sorted_words = sorted(freq.items(), key=lambda x: x[1], reverse=True)
     top_words = [w[0] for w in sorted_words[:5]]
     return ", ".join(top_words)
 
 
-# --------------------------
-#   AUTOMATIC CATEGORIZATION
-# --------------------------
-
 def categorize_document(keywords):
     keywords_lower = keywords.lower()
-
     if any(k in keywords_lower for k in ['project', 'plan', 'hackathon']):
         return "Project/Hackathon"
     elif any(k in keywords_lower for k in ['marketing', 'brand', 'campaign']):
@@ -108,9 +107,8 @@ def categorize_document(keywords):
 
 
 # --------------------------
-#      UPLOAD DOCUMENT
+# UPLOAD DOCUMENT
 # --------------------------
-
 class UploadDocumentAPIView(APIView):
     parser_classes = [MultiPartParser, FormParser]
 
@@ -137,11 +135,18 @@ class UploadDocumentAPIView(APIView):
         keywords = generate_keywords(extracted_text)
         category = categorize_document(keywords)
 
-        # Save document
+        # Upload to Appwrite
+        appwrite_file = storage.create_file(
+            bucket_id=APPWRITE_BUCKET_ID,
+            file_id="unique()",  # Appwrite generates unique ID
+            file=file
+        )
+
+        # Save document with Appwrite file ID
         doc = Document.objects.create(
             filename=file.name,
             normalized_filename=normalized_name,
-            file=file,
+            file_id=appwrite_file["$id"],
             content=extracted_text,
             keywords=keywords,
             category=category
@@ -154,9 +159,8 @@ class UploadDocumentAPIView(APIView):
 
 
 # --------------------------
-#   LIST DOCUMENTS
+# LIST DOCUMENTS
 # --------------------------
-
 class ListDocumentsAPIView(APIView):
     def get(self, request):
         docs = Document.objects.all().order_by('-uploaded_at')
@@ -165,26 +169,22 @@ class ListDocumentsAPIView(APIView):
 
 
 # --------------------------
-#   SEARCH DOCUMENTS
+# SEARCH DOCUMENTS
 # --------------------------
-
 class SearchDocumentsAPIView(APIView):
     def get(self, request):
         query = request.GET.get("q", "").strip()
         category_filter = request.GET.get("category", "").strip()
-
         docs = Document.objects.all()
 
-        # Apply search query OR logic
         if query:
             docs = docs.filter(
                 Q(filename__icontains=query) |
-                Q(normalized_filename__icontains=query) |  # <-- NEW important line
+                Q(normalized_filename__icontains=query) |
                 Q(content__icontains=query) |
                 Q(keywords__icontains=query)
             )
 
-        # Category filter
         if category_filter and category_filter.lower() != "all":
             docs = docs.filter(category__icontains=category_filter)
 
