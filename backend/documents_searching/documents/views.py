@@ -119,29 +119,52 @@ class UploadDocumentAPIView(APIView):
         file = serializer.validated_data.get("file")
         filename = file.name.lower()
 
-        # Extract content
+        # ----------------------------------------
+        # 1) Read file bytes once (important!)
+        # ----------------------------------------
+        file_bytes = file.read()  # read file content
+        file.seek(0)  # reset pointer for docx/pdf parsing
+
+        # ----------------------------------------
+        # 2) Extract content
+        # ----------------------------------------
         if filename.endswith(".pdf"):
             extracted_text = extract_text_from_pdf(file)
         elif filename.endswith(".docx"):
             extracted_text = extract_text_from_docx(file)
         else:
-            return Response({"error": "Unsupported file type"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error": "Unsupported file type"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         # Normalize filename
         normalized_name = normalize_filename(file.name)
 
-        # Generate keywords + category
+        # Keywords + category
         keywords = generate_keywords(extracted_text)
         category = categorize_document(keywords)
 
-        # Upload to Appwrite
-        appwrite_file = storage.create_file(
-            bucket_id=APPWRITE_BUCKET_ID,
-            file_id=InputFile.unique(),  # correct usage
-            file=file
-        )
+        # ----------------------------------------
+        # 3) Upload to Appwrite (correct way)
+        # ----------------------------------------
+        input_file = InputFile.from_bytes(file_bytes, file.name)
 
-        # Save document with Appwrite file ID
+        try:
+            appwrite_file = storage.create_file(
+                bucket_id=APPWRITE_BUCKET_ID,
+                file_id="unique()",     # correct usage
+                file=input_file
+            )
+        except Exception as e:
+            return Response(
+                {"error": "Appwrite upload failed", "details": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+        # ----------------------------------------
+        # 4) Save to DB
+        # ----------------------------------------
         doc = Document.objects.create(
             filename=file.name,
             normalized_filename=normalized_name,
@@ -151,7 +174,10 @@ class UploadDocumentAPIView(APIView):
             category=category
         )
 
-        return Response(DocumentSerializer(doc).data, status=status.HTTP_201_CREATED)
+        return Response(
+            DocumentSerializer(doc).data,
+            status=status.HTTP_201_CREATED
+        )
 
     def get(self, request):
         return Response({"message": "Use POST to upload document"})
