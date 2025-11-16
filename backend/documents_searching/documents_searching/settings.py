@@ -12,7 +12,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Quick-start development settings - unsuitable for production
 SECRET_KEY = 'django-insecure-4(s@*o%3c6)3mw9sn3=7!^*7y+b2h(x4lhosc0$ljjj$=dxzg^'
-DEBUG = False  # Set to False in production
+DEBUG = True
 
 ALLOWED_HOSTS = [
     'rapidquest-backend-hgcc.onrender.com',
