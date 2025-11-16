@@ -2,8 +2,7 @@ import React from "react";
 
 const DocumentCard = ({ doc }) => {
   if (!doc || !doc.file) return null; // hide if file missing
-
-  const backendUrl = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
+  const backendUrl = import.meta.env.VITE_API_URL || "https://rapidquest-backend-hgcc.onrender.com";
   const fileUrl = `${backendUrl}${doc.file}`;
 
   return (
