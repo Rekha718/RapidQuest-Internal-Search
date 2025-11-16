@@ -1,9 +1,10 @@
 from django.db import models
 
 class Document(models.Model):
-    file = models.FileField(upload_to='documents/')
+    
+    file_id = models.CharField(max_length=255, blank=True, null=True)  # Appwrite file ID
     filename = models.CharField(max_length=255)
-    normalized_filename = models.CharField(max_length=300, blank=True)  # NEW FIELD
+    normalized_filename = models.CharField(max_length=300, blank=True)
     content = models.TextField(blank=True)   # extracted text
     keywords = models.TextField(blank=True)  # comma separated keywords
     category = models.CharField(max_length=100, blank=True)  # auto category
