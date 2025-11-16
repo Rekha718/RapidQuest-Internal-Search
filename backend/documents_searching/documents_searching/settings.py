@@ -144,7 +144,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # CORS settings
 CORS_ALLOW_ALL_ORIGINS = False  # safer for production
 CORS_ALLOWED_ORIGINS = [
-    "https://rapid-quest-internal-search-frontend.vercel.app",
+    "https://rapid-quest-internal-search-fronten.vercel.app",
 ]
 
 
