@@ -1,12 +1,20 @@
 import React, { useState } from "react";
-import axios from "axios";
+import { Client, Storage } from "appwrite";
+
+// Appwrite config (you can also move these to .env)
+const APPWRITE_ENDPOINT = "https://fra.cloud.appwrite.io/v1";
+const APPWRITE_PROJECT_ID = "69199dd4001999027b50";
+const APPWRITE_BUCKET_ID = "69199e4b0022548436b1";
+
+const client = new Client()
+  .setEndpoint(APPWRITE_ENDPOINT)
+  .setProject(APPWRITE_PROJECT_ID);
+
+const storage = new Storage(client);
 
 const UploadDocumentPage = () => {
   const [file, setFile] = useState(null);
   const [message, setMessage] = useState("");
-
-  // Use only Vite env variable
-  const API_URL = import.meta.env.VITE_API_URL;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -15,14 +23,15 @@ const UploadDocumentPage = () => {
       return;
     }
 
-    const formData = new FormData();
-    formData.append("file", file);
-
     try {
-      const res = await axios.post(`${API_URL}/api/upload/`, formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-      setMessage("Uploaded successfully: " + (res.data.filename || "File"));
+      // Upload file to Appwrite storage
+      const response = await storage.createFile(APPWRITE_BUCKET_ID, "unique()", file);
+      console.log("Appwrite upload response:", response);
+
+      // You can optionally send file metadata to your backend
+      // axios.post(`${API_URL}/api/upload/`, { filename: file.name, file_id: response.$id });
+
+      setMessage("Uploaded successfully: " + file.name);
       setFile(null);
     } catch (err) {
       console.error("Upload error:", err);
@@ -36,6 +45,7 @@ const UploadDocumentPage = () => {
       <form onSubmit={handleSubmit} className="text-center">
         <input
           type="file"
+          accept="application/pdf"
           onChange={(e) => setFile(e.target.files[0])}
           className="form-control mb-3"
         />
