@@ -18,6 +18,7 @@ import re
 # Appwrite imports
 from appwrite.client import Client
 from appwrite.services.storage import Storage
+from appwrite.input_file import InputFile  # <-- for unique file IDs
 
 # Download stopwords once
 nltk.download('stopwords', quiet=True)
@@ -27,7 +28,7 @@ STOPWORDS = set(stopwords.words('english'))
 APPWRITE_ENDPOINT = "https://fra.cloud.appwrite.io/v1"
 APPWRITE_PROJECT_ID = "69199dd4001999027b50"
 APPWRITE_BUCKET_ID = "69199e4b0022548436b1"
-APPWRITE_API_KEY = "standard_e91ce24b8e67320ec080559ac6bd995c9b92ea78b9bd22b6213c8d8999daebf619667cee271fd4177fa6a2f1a53d1f08922ef178eb55a0ec76511cbf442a8f2c7e50902e7eadf372ae8f3d41000fa3002c015cf8377f0559a9504e2c541d5bd200af0db02d9e9ae9b49ff4c281fb7caf29e5df756829f14cee88e7a2cb6d6928"
+APPWRITE_API_KEY = "YOUR_APPWRITE_API_KEY_HERE"
 
 client = Client()
 client.set_endpoint(APPWRITE_ENDPOINT)
@@ -44,7 +45,6 @@ def normalize_text(text):
     text = " ".join(text.split())
     text = re.sub(r"(?<=[a-z])(?=[A-Z])", " ", text)
     return text
-
 
 def normalize_filename(name):
     name = re.sub(r"(?<=[a-z])(?=[A-Z])", " ", name)
@@ -68,7 +68,6 @@ def extract_text_from_pdf(file):
         return text.strip()
     except:
         return ""
-
 
 def extract_text_from_docx(file):
     try:
@@ -138,7 +137,7 @@ class UploadDocumentAPIView(APIView):
         # Upload to Appwrite
         appwrite_file = storage.create_file(
             bucket_id=APPWRITE_BUCKET_ID,
-            file_id="unique()",  # Appwrite generates unique ID
+            file_id=InputFile.unique(),  # correct usage
             file=file
         )
 
