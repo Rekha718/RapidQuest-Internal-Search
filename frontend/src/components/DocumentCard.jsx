@@ -1,9 +1,15 @@
 import React from "react";
 
+// Appwrite config (you can also move these to .env)
+const APPWRITE_ENDPOINT = "https://fra.cloud.appwrite.io/v1";
+const APPWRITE_PROJECT_ID = "69199dd4001999027b50";
+const APPWRITE_BUCKET_ID = "69199e4b0022548436b1";
+
 const DocumentCard = ({ doc }) => {
-  if (!doc || !doc.file) return null; // hide if file missing
-  const backendUrl = import.meta.env.VITE_API_URL || "https://rapidquest-backend-hgcc.onrender.com";
-  const fileUrl = `${backendUrl}${doc.file}`;
+  if (!doc || !doc.file_id) return null; // hide if file missing
+
+  // Construct Appwrite file view URL
+  const fileUrl = `${APPWRITE_ENDPOINT}/storage/buckets/${APPWRITE_BUCKET_ID}/files/${doc.file_id}/view?project=${APPWRITE_PROJECT_ID}&mode=inline`;
 
   return (
     <div className="card mb-4 shadow-sm">
