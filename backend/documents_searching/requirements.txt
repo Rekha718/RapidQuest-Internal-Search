@@ -21,5 +21,7 @@ sqlparse==0.5.3
 tqdm==4.67.1
 typing_extensions==4.15.0
 tzdata==2025.2
+appwrite>=8.0.0
 gunicorn==21.2.0
+
 
